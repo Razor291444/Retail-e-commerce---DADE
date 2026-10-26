@@ -2,7 +2,7 @@
 
 ## 1. Présentation du projet
 
-**ReMarket** est une marketplace dédiée à la vente de produits électroniques reconditionnés, notamment des smartphones, des ordinateurs et des accessoires.
+**ReMarket** est une marketplace dédiée à la vente.
 
 Le projet repose sur une architecture en microservices. Chaque service est responsable d'un domaine fonctionnel précis et communique avec les autres composants par l'intermédiaire d'API REST et/ou de messages asynchrones + d'API GraphQL.
 
