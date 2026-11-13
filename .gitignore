@@ -47,3 +47,5 @@ replay_pid*
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+*__pycache__/
