@@ -1,70 +1,102 @@
 # ReMarket
 
-Marketplace alimentaire basée sur Open Food Facts.
+Marketplace alimentaire basée sur Open Food Facts, FastAPI, GraphQL Strawberry,
+PostgreSQL, MongoDB, Traefik et React/Vite.
 
-## Stack
+## Prérequis
 
-- Python 3.13 + FastAPI pour Auth, Catalogue, Commandes, Stock et Paiement
-- GraphQL Strawberry + MongoDB pour le catalogue
-- PostgreSQL partagé avec un schéma par domaine transactionnel
-- Traefik comme API Gateway
-- React + TypeScript + Vite pour le frontend
+- Docker Desktop démarré
+- Docker Compose v2 (`docker compose version`)
+- Git, si le dépôt doit être cloné
 
-## Démarrage
+## Démarrage rapide
+
+Depuis la racine du dépôt :
 
 ```powershell
-docker compose up --build
+Copy-Item .env.example .env
+docker compose --env-file .env up --build
 ```
 
-Applications :
+Le premier démarrage peut prendre quelques minutes. Pour lancer les services
+en arrière-plan :
 
-| Composant | Accès |
+```powershell
+docker compose --env-file .env up --build -d
+```
+
+Vérifier l'état des conteneurs :
+
+```powershell
+docker compose ps
+```
+
+Arrêter la plateforme :
+
+```powershell
+docker compose down
+```
+
+Pour supprimer également les données locales PostgreSQL et MongoDB :
+
+```powershell
+docker compose down -v
+```
+
+## URLs
+
+| Composant | URL |
 |---|---|
-| Frontend React | http://localhost:3000 |
-| Gateway Traefik | http://localhost |
+| Application React | http://localhost:3000 |
+| API Gateway Traefik | http://localhost:8080 |
 | Dashboard Traefik | http://localhost:8088 |
-| Auth REST direct | http://localhost:8081 |
-| Catalogue GraphQL direct | http://localhost:8082/graphql |
+| Auth REST direct (diagnostic uniquement) | http://localhost:8081 |
+| Catalogue GraphQL direct (diagnostic uniquement) | http://localhost:8082/graphql |
 
-Les services exposent aussi `/health`. Par exemple :
+L'application frontend utilise la gateway. Les ports directs des
+microservices sont réservés au diagnostic local.
+
+## Frontend seul
+
+Pour développer le frontend sans Docker :
+
+```powershell
+Set-Location .\Frontend_web
+npm install
+npm run dev
+```
+
+Puis ouvrir http://localhost:5173. Les variables frontend sont documentées
+dans [Frontend_web/.env.example](<C:/Users/Admin/Downloads/Efrei/New folder/Data Use Case/Projet/Retail-e-commerce---DADE/Frontend_web/.env.example>).
+Le mode `VITE_ENABLE_MOCK_FALLBACK=true` permet d'utiliser les données de
+démonstration si les services backend ne sont pas encore disponibles.
+
+## Vérifications rapides
 
 ```powershell
 Invoke-RestMethod http://localhost:8081/health
 Invoke-RestMethod http://localhost:8082/health
-docker compose ps
+docker compose logs -f frontend
 ```
 
-## Catalogue Open Food Facts
+Dans l'interface, les comptes de démonstration `admin`, `catalog_manager`,
+`analyst` et `logistics` sont disponibles depuis l'écran de connexion.
 
-Le catalogue est exclusivement stocké dans MongoDB. PostgreSQL conserve
-uniquement `integration.product_mapping`, qui relie le code-barres et le
-`product_id` utilisé par les commandes et le stock.
+## Données et catalogue
 
-Pour préparer un export JSONL :
+Le catalogue est stocké dans MongoDB. PostgreSQL conserve les données
+transactionnelles et les relations d'intégration. Le schéma PostgreSQL utilisé
+par Docker se trouve dans
+[Storage/postgres/market_postgres_schema.sql](<C:/Users/Admin/Downloads/Efrei/New folder/Data Use Case/Projet/Retail-e-commerce---DADE/Storage/postgres/market_postgres_schema.sql>).
 
-```powershell
-.\.venv\Scripts\python `
-  Storage\data-generator\open_food_facts_to_postgres.py `
-  --input "C:\data\openfoodfacts.jsonl" `
-  --mapping-file "C:\data\product-mapping.json" `
-  --mongo-output "C:\data\products-normalized.json" `
-  --limit 10000
-```
-
-Le générateur charge automatiquement `POSTGRES_DB`, `POSTGRES_USER` et
-`POSTGRES_PASSWORD` depuis le fichier `.env` à la racine. Les variables déjà
-présentes dans la session PowerShell restent prioritaires.
-
-Puis importer MongoDB :
+Pour importer un fichier JSONL dans MongoDB :
 
 ```powershell
 mongoimport --uri mongodb://localhost:27017/remarket `
-  --collection products --file C:\data\products-normalized.json --jsonArray
+  --collection catalog `
+  --file C:\data\products-normalized.json `
+  --jsonArray
 ```
 
-Le fichier [create_schema_and_tables.sql](<C:/Users/Ruben Mougoué/Desktop/Retail-e-commerce---DADE/Storage/postgres/create_schema_and_tables.sql>) est conservé comme référence SQL Server historique. Docker utilise le script PostgreSQL dédié [init_postgres.sql](<C:/Users/Ruben Mougoué/Desktop/Retail-e-commerce---DADE/Storage/postgres/init_postgres.sql>).
-
-MongoDB utilise deux comptes distincts : `MONGO_INITDB_ROOT_USERNAME` /
-`MONGO_INITDB_ROOT_PASSWORD` pour administrer MongoDB et
-`CATALOG_MONGO_USER` / `CATALOG_MONGO_PASSWORD` pour l'application catalogue.
-Le script `mongo_init.js` doit être exécuté avec le premier compte.
+Les contrats de navigation frontend sont décrits dans
+[NAVIGATION_CONTRACTS.md](<C:/Users/Admin/Downloads/Efrei/New folder/Data Use Case/Projet/Retail-e-commerce---DADE/NAVIGATION_CONTRACTS.md>).
